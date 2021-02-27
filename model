@@ -1,0 +1,47 @@
+import tensorflow as tf
+tf.keras.backend.clear_session()
+from tensorflow.keras.layers import Dense, Flatten,Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+# re-size all the images to this
+IMAGE_SIZE = [224, 224]
+# add preprocessing layer to the front of VGG
+vgg = VGG16(input_shape=IMAGE_SIZE + [3], weights='imagenet', include_top=False)
+# don't train existing weights
+for layer in vgg.layers:
+  layer.trainable = False
+# Flatten the output layer to 1 dimension
+x = Flatten()(vgg.output)
+prediction = Dense(2, activation='softmax')(x)
+# create a model object
+model = Model(inputs=vgg.input, outputs=prediction)
+# view the structure of the model
+model.summary()
+
+# tell the model what cost and optimization method to use
+model.compile(
+  loss='categorical_crossentropy',
+  optimizer='adam',
+  metrics=['accuracy',tf.keras.metrics.Precision(), 
+                        tf.keras.metrics.Recall()]
+)
+train_datagen = ImageDataGenerator(rescale = 1./255,
+                                   shear_range = 0.2,
+                                   zoom_range = 0.2,
+                                   horizontal_flip = True)
+
+training_set = train_datagen.flow_from_directory("/training",
+                                                 target_size = (224, 224),
+                                                 batch_size = 64,
+                                                 class_mode = 'categorical')
+
+
+# fit the model
+r = model.fit(
+  training_set,
+  epochs=50
+)
+
+
+model.save('detection.h5')
