@@ -45,3 +45,27 @@ r = model.fit(
 
 
 model.save('detection.h5')
+
+
+
+import numpy as np
+test_datagen = ImageDataGenerator(rescale = 1./255)
+testing_set = test_datagen.flow_from_directory("/test",
+                                                 target_size = (224, 224),
+                                                 batch_size = 16,
+                                                 class_mode = 'categorical')
+
+steps = 16
+predictions = model.predict_generator(testing_set, steps=steps)
+
+val_preds = np.argmax(predictions, axis=-1)
+val_trues = testing_set.classes
+#print(val_preds)
+#print(val_trues)
+
+(loss, accuracy, precision, recall) = model.evaluate_generator(testing_set, 16)
+f1_score = (2*precision*recall)/(precision+recall)
+print(accuracy)
+print(precision)
+print(recall)
+print(f1_score)
